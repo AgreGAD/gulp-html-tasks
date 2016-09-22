@@ -10,6 +10,7 @@ var
 var defaultConfig = {
     entry: 'blocks/layout/layout.js',
     blockPath: 'blocks/*/*.pug',
+    frontendPath: ['/blocks/', '/scss/'],
     pugWatchList: ['blocks/*/*.pug', 'blocks/*/data.js'],
     destination: 'var',
     extract: true
@@ -28,7 +29,8 @@ var getAssetsTask = function (gulp, config, aliases, provides, isDevelopment) {
         aliases: aliases,
         provides: provides,
         watch: isDevelopment,
-        extract: config.extract
+        extract: config.extract,
+        frontendPath: config.frontendPath
     });
 };
 
