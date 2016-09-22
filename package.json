@@ -1,0 +1,29 @@
+{
+  "name": "gulp-html-tasks",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgreGAD/gulp-html-task.git"
+  },
+  "author": "Marat Fakhertdinov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AgreGAD/gulp-html-task/issues"
+  },
+  "homepage": "https://github.com/AgreGAD/gulp-html-task#readme",
+  "dependencies": {
+    "browser-sync": "^2.16.0",
+    "del": "~2.2.0",
+    "gulp-livereload": "^3.8.1",
+    "gulp-pug": "^3.0.4",
+    "gulp-watch": "~4.3.0",
+    "gulp-webpack-task": "~0.1",
+    "lodash": "^4.13.1",
+    "pug": "^2.0.0-beta6"
+  }
+}
