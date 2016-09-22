@@ -61,11 +61,6 @@ var pugCompile = function (template, data, tmpFile) {
 };
 
 var compile = function (file, enc, cb) {
-
-    console.log(file.path);
-
-
-
     var dirname = path.dirname(file.path);
     var blocksPath = dirname + '/..';
 
