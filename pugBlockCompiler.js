@@ -32,15 +32,15 @@ var calcBlockName = function (filename) {
     return _.lowerFirst(_.join(upperWords, ''));
 };
 
-var getBlockTemplate = function (filename) {
-    var blockName = calcBlockName(filename);
+var getBlockTemplate = function (blockName, filename) {
+    var mixinName = calcBlockName(filename);
 
     return `
-include ./${filename}/${filename}.pug
+include ./${blockName}/${filename}.pug
 include ./layout/layout.pug
 
 +layout(layoutData)
-  +${blockName}(blockData)
+  +${mixinName}(blockData)
     `;
 };
 var getLayoutTemplate = function () {
@@ -62,12 +62,13 @@ var pugCompile = function (template, data, tmpFile) {
 
 var compile = function (file, enc, cb) {
     var dirname = path.dirname(file.path);
+    var blockName = _.last(_.split(dirname, '/'));
     var blocksPath = dirname + '/..';
 
     file.path = file.cwd + '/' + path.basename(file.path);
 
     var templateFilename = path.basename(file.path, '.pug');
-    var template = (templateFilename == 'layout') ? getLayoutTemplate() : getBlockTemplate(templateFilename);
+    var template = (templateFilename == 'layout') ? getLayoutTemplate() : getBlockTemplate(blockName, templateFilename);
 
     var html = pugCompile(template, {
         layoutData: loadData(blocksPath + '/layout/data.js'),
