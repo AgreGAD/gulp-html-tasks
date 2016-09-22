@@ -76,8 +76,6 @@ var compile = function (file, enc, cb) {
 
     file.path = ext(file.path, '.html');
 
-    console.log(file.path);
-
     if (file.isBuffer()) {
         file.contents = new Buffer(html);
     }
