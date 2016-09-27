@@ -11,7 +11,7 @@ var defaultConfig = {
     entry: 'blocks/layout/layout.js',
     blockPath: 'blocks/*/*.pug',
     frontendPath: ['/blocks/', '/scss/'],
-    pugWatchList: ['blocks/*/*.pug', 'blocks/*/data.js'],
+    pugWatchList: ['blocks/*/*.pug', 'blocks/*/*.data.js'],
     destination: 'var',
     extract: true
 };
