@@ -2,12 +2,81 @@
 
 var
     _ = require('lodash'),
-    through = require('through2'),
+    through2 = require('through2').obj,
     path = require('path'),
     fs = require('fs'),
     pug = require('pug'),
-    ext = require('gulp-util').replaceExtension,
-    md5File = require('md5-file');
+    ext = require('gulp-util').replaceExtension;
+
+var index = {};
+
+var getBlockIndex = function(relativePath) {
+    if (undefined === index[relativePath]) {
+        index[relativePath] = {
+            template: {},
+            data: {}
+        };
+    }
+
+    return index[relativePath];
+};
+
+var compareTimes = function (time1, time2) {
+    if (!time1 || !time2) {
+        return false;
+    }
+
+    return time1.getTime() == time2.getTime();
+};
+
+var updateFileInfo = function (filepath, oldData) {
+    if (!isExists(filepath)) {
+        return undefined;
+    }
+
+    var stats = fs.statSync(filepath);
+    var blockData = {};
+
+    blockData.filepath = filepath;
+    blockData.oldTimestamp = oldData.newTimestamp;
+    blockData.newTimestamp = stats.mtime;
+    blockData.isChanged = !compareTimes(blockData.oldTimestamp, blockData.newTimestamp);
+
+    return blockData;
+};
+
+var getIncludesBlocks = function (file) {
+    var matches = file.contents.toString().match(/include .+\.pug/ig);
+    var blockDir = path.normalize(file.dirname + '/../');
+
+    if (!matches) {
+        return [];
+    }
+
+    return _.map(matches, function (str) {
+        str = _.replace(str, 'include .', file.dirname);
+        str = path.normalize(str);
+        str = _.replace(str, blockDir, '');
+
+        return str;
+    });
+};
+
+var isNeedUpdate = function (relativePath) {
+    var blockIndex = index[relativePath];
+
+    if (blockIndex.template.isChanged) {
+        return true;
+    } else if (!blockIndex.dependecies.length) {
+        return false;
+    } else {
+        var isNeedDependenciesUpdate = _.map(blockIndex.dependecies, function (dependencyRelativePath) {
+            return isNeedUpdate(dependencyRelativePath);
+        });
+
+        return -1 != _.indexOf(isNeedDependenciesUpdate, true);
+    }
+};
 
 var isExists = function (filepath) {
     try {
@@ -21,16 +90,8 @@ var isExists = function (filepath) {
 };
 
 var loadData = function (filepath) {
-    var data = undefined;
-
-    if (isExists(filepath)) {
-        delete require.cache[require.resolve(filepath)];
-        data = require(filepath);
-    } else {
-        data = {};
-    }
-
-    return data;
+    delete require.cache[require.resolve(filepath)];
+    return require(filepath);
 };
 
 var calcBlockName = function (filename) {
@@ -70,41 +131,32 @@ var pugCompile = function (template, data, tmpFile) {
     return fn(data);
 };
 
-var files = {};
-var checkFileUpdates = function (filepath) {
-    if (!isExists(filepath)) {
-        return false;
-    }
-
-    var hash = md5File.sync(filepath);
-
-    if (undefined === files[filepath] || files[filepath] !== hash) {
-        files[filepath] = hash;
-
+var isChanged = function (blockIndex) {
+    if (blockIndex.template.isChanged) {
         return true;
     }
 
-    return false;
+    if (!blockIndex.data) {
+        return false;
+    }
+
+    return blockIndex.data.isChanged;
 };
 
-
-var compile = function (file, enc, cb) {
+var compileFile = function (file, enc, cb) {
     var
         dirname = path.dirname(file.path),
         blocksPath = dirname + '/..',
         layoutDataFilepath = blocksPath + '/layout/layout.data.js',
-        templateFilename = path.basename(file.path, '.pug'),
-        blockDataFilepath = dirname + '/' + templateFilename + '.data.js';
+        templateFilename = path.basename(file.path, '.pug');
 
-    var isTemplateUpdated = checkFileUpdates(file.path),
-        isLayoutDataFileUpdated = checkFileUpdates(layoutDataFilepath),
-        isTemplateDataFileUpdated = checkFileUpdates(blockDataFilepath);
+    var blockIndex = index[file.relative];
+    blockIndex.template.isChanged = isNeedUpdate(file.relative);
 
-    if (!isTemplateUpdated && !isLayoutDataFileUpdated && !isTemplateDataFileUpdated) {
+    if (!isChanged(blockIndex)) {
         cb();
         return;
     }
-
     var blockName = _.last(_.split(dirname, '/'));
 
     file.path = file.cwd + '/' + path.basename(file.path);
@@ -112,8 +164,8 @@ var compile = function (file, enc, cb) {
     var template = (templateFilename == 'layout') ? getLayoutTemplate() : getBlockTemplate(blockName, templateFilename);
 
     var html = pugCompile(template, {
-        layoutData: loadData(layoutDataFilepath),
-        blockData: loadData(blockDataFilepath)
+        layoutData: isExists(layoutDataFilepath) ? loadData(layoutDataFilepath) : {},
+        blockData: blockIndex.data ? loadData(blockIndex.data.filepath) : {}
     }, dirname + '/../tmp.pug');
 
     file.path = ext(file.path, '.html');
@@ -125,6 +177,23 @@ var compile = function (file, enc, cb) {
     cb(null, file);
 };
 
+var indexFile = function (file, enc, callback) {
+    var templateFilename = path.basename(file.relative, '.pug');
+    var blockDataFilepath = file.dirname + '/' + templateFilename + '.data.js';
+
+    var blockIndex = getBlockIndex(file.relative);
+
+    blockIndex.template = updateFileInfo(file.path, blockIndex.template);
+    blockIndex.data = updateFileInfo(blockDataFilepath, blockIndex.data);
+    blockIndex.dependecies = getIncludesBlocks(file);
+
+    callback(null, file);
+};
+
 module.exports = function () {
-    return through.obj(compile);
+    return through2(compileFile);
+};
+
+module.exports.index = function () {
+    return through2(indexFile);
 };
