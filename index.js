@@ -1,6 +1,7 @@
 'use strict';
 
 var
+    argv = require('yargs').argv,
     gulpWebpackTask = require('gulp-webpack-task'),
     watch = require('gulp-watch'),
     del = require('del'),
@@ -15,6 +16,9 @@ var defaultConfig = {
     destination: 'var',
     extract: true
 };
+
+console.log(argv.o);
+
 
 var getCleanTask = function (config) {
     return function () {
@@ -38,7 +42,7 @@ var getServeTask = function (config) {
     return function () {
         browserSync.init({
             server: config.destination + '/',
-            open: false
+            open: (argv.o || argv.open) ? 'local' : false
         });
 
         browserSync.watch(config.destination + '/**/*.*').on('change', browserSync.reload);
@@ -49,6 +53,7 @@ var getPugTask = function (gulp, config) {
     // todo: mystic destination path
     return function () {
         return gulp.src(config.blockPath)
+            .pipe(pugBlockCompiler.index())
             .pipe(pugBlockCompiler())
             .pipe(gulp.dest(config.destination + '/test/'));
     };
