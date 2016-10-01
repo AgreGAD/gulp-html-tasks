@@ -37,7 +37,8 @@ var getAssetsTask = function (gulp, config, aliases, provides, isDevelopment) {
 var getServeTask = function (config) {
     return function () {
         browserSync.init({
-            server: config.destination + '/'
+            server: config.destination + '/',
+            open: false
         });
 
         browserSync.watch(config.destination + '/**/*.*').on('change', browserSync.reload);
