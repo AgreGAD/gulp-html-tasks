@@ -17,9 +17,6 @@ var defaultConfig = {
     extract: true
 };
 
-console.log(argv.o);
-
-
 var getCleanTask = function (config) {
     return function () {
         return del(config.destination);
