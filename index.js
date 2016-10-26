@@ -1,6 +1,7 @@
 'use strict';
 
 var
+    _ = require('lodash'),
     argv = require('yargs').argv,
     gulpWebpackTask = require('gulp-webpack-task'),
     watch = require('gulp-watch'),
@@ -19,18 +20,20 @@ var defaultConfig = {
 
 var getCleanTask = function (config) {
     return function () {
-        return del(config.destination);
+        return del(config.destination, {force: true});
     };
 };
 
-var getAssetsTask = function (gulp, config, aliases, provides, isDevelopment) {
+var getAssetsTask = function (gulp, config, aliases, provides, env) {
     return gulpWebpackTask(gulp, {
         entry: config.entry,
         destination: config.destination + '/',
         aliases: aliases,
         provides: provides,
-        watch: isDevelopment,
+        watch: 'development' == env,
         extract: config.extract,
+        hash: 'production' == env,
+        manifest: 'production' == env,
         frontendPath: config.frontendPath
     });
 };
@@ -62,17 +65,27 @@ var getPugWatchTask = function (gulp, config) {
     };
 };
 
-var getDefaultTask = function (gulp, isDevelopment) {
-    return isDevelopment
-        ? gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch', 'serve'))
-        : gulp.series('clean', 'pug', 'assets');
+var getDefaultTask = function (gulp, env) {
+    switch (env) {
+        case 'production':
+            return gulp.series('clean', 'assets');
+            break;
+        case 'development':
+            return gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch', 'serve'));
+            break;
+        case 'stage':
+            return gulp.series('clean', 'pug', 'assets');
+            break;
+    }
 };
 
 module.exports = function (gulp, config) {
-    gulp.task('clean', getCleanTask(defaultConfig));
-    gulp.task('assets', getAssetsTask(gulp, defaultConfig, config.aliases, config.provides, config.isDevelopment));
-    gulp.task('serve', getServeTask(defaultConfig));
-    gulp.task('pug', getPugTask(gulp, defaultConfig));
-    gulp.task('pug_watch', getPugWatchTask(gulp, defaultConfig));
-    gulp.task('default', getDefaultTask(gulp, config.isDevelopment));
+    const webpackConfig = _.assign(defaultConfig, config);
+
+    gulp.task('clean', getCleanTask(webpackConfig));
+    gulp.task('assets', getAssetsTask(gulp, webpackConfig, config.aliases, config.provides, config.env));
+    gulp.task('serve', getServeTask(webpackConfig));
+    gulp.task('pug', getPugTask(gulp, webpackConfig));
+    gulp.task('pug_watch', getPugWatchTask(gulp, webpackConfig));
+    gulp.task('default', getDefaultTask(gulp, config.env));
 };
