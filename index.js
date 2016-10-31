@@ -33,6 +33,7 @@ var getAssetsTask = function (gulp, config, aliases, provides, env) {
         watch: 'development' == env,
         extract: config.extract,
         hash: 'production' == env,
+        minimize: 'production' == env,
         manifest: 'production' == env,
         frontendPath: config.frontendPath
     });
