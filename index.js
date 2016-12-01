@@ -2,12 +2,14 @@
 
 var
     _ = require('lodash'),
+    wait = require('gulp-wait'),
     argv = require('yargs').argv,
     gulpWebpackTask = require('gulp-webpack-task'),
     watch = require('gulp-watch'),
     del = require('del'),
     browserSync = require('browser-sync').create(),
-    pugBlockCompiler = require('./pugBlockCompiler');
+    pugBlockCompiler = require('./pugBlockCompiler'),
+    applyManifest = require('./applyManifest');
 
 var defaultConfig = {
     entry: 'blocks/layout/layout.js',
@@ -27,36 +29,64 @@ var getCleanTask = function (config) {
 var getAssetsTask = function (gulp, config, aliases, provides, env) {
     return gulpWebpackTask(gulp, {
         entry: config.entry,
-        destination: config.destination + '/',
+        destination: _.map(config.destination, function (path) { return path + '/'; }),
         aliases: aliases,
         provides: provides,
         watch: 'development' == env,
+        hash: 'development' != env,
+        minimize: 'development' != env,
+        manifest: true,
         extract: config.extract,
-        hash: 'production' == env,
-        minimize: 'production' == env,
-        manifest: 'production' == env,
         frontendPath: config.frontendPath
     });
+};
+
+var getApplyManifestFile = function (gulp, destinations) {
+    return function () {
+        var gulpPipe = gulp.src(destinations + '/*.html')
+            .pipe(wait(1000))
+            .pipe(applyManifest());
+
+        _.each(destinations, function (path) {
+            gulpPipe.pipe(gulp.dest(path));
+        });
+
+        return gulpPipe;
+    };
 };
 
 var getServeTask = function (config) {
     return function () {
         browserSync.init({
-            server: config.destination + '/',
+            server: _.head(config.destination) + '/',
             open: (argv.o || argv.open) ? 'local' : false
         });
 
-        browserSync.watch(config.destination + '/**/*.*').on('change', browserSync.reload);
+        browserSync.watch(_.head(config.destination) + '/**/*.*').on('change', browserSync.reload);
     }
 };
 
 var getPugTask = function (gulp, config) {
-    // todo: mystic destination path
+
+    var firstDestination = _.head(config.destination);
+
     return function () {
-        return gulp.src(config.blockPath)
+        var gulpPipe = gulp.src(config.blockPath)
             .pipe(pugBlockCompiler.index())
-            .pipe(pugBlockCompiler())
-            .pipe(gulp.dest(config.destination + '/test/'));
+            .pipe(pugBlockCompiler());
+
+        if ('stage' == config.env) {
+            gulpPipe
+                .pipe(wait(1000))
+                .pipe(applyManifest(firstDestination));
+        }
+
+        _.each(config.destination, function (path) {
+            // todo: mystic destination path
+            gulpPipe.pipe(gulp.dest(path + '/test/'));
+        });
+
+        return gulpPipe;
     };
 };
 
@@ -75,7 +105,7 @@ var getDefaultTask = function (gulp, env) {
             return gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch', 'serve'));
             break;
         case 'stage':
-            return gulp.series('clean', 'pug', 'assets');
+            return gulp.series('clean', 'assets', 'pug');
             break;
     }
 };
@@ -83,8 +113,13 @@ var getDefaultTask = function (gulp, env) {
 module.exports = function (gulp, config) {
     const webpackConfig = _.assign(defaultConfig, config);
 
+    if (!_.isArray(webpackConfig.destination)) {
+        webpackConfig.destination = [webpackConfig.destination];
+    }
+
     gulp.task('clean', getCleanTask(webpackConfig));
     gulp.task('assets', getAssetsTask(gulp, webpackConfig, config.aliases, config.provides, config.env));
+    gulp.task('apply_manifest', getApplyManifestFile(gulp, webpackConfig.destination));
     gulp.task('serve', getServeTask(webpackConfig));
     gulp.task('pug', getPugTask(gulp, webpackConfig));
     gulp.task('pug_watch', getPugWatchTask(gulp, webpackConfig));
