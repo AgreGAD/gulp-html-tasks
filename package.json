@@ -22,7 +22,7 @@
     "gulp-livereload": "^3.8.1",
     "gulp-pug": "^3.0.4",
     "gulp-watch": "~4.3.0",
-    "gulp-webpack-task": "~0.2",
+    "gulp-webpack-task": "~0.4",
     "lodash": "^4.13.1",
     "pug": "^2.0.0-beta6",
     "yargs": "^6.0.0"
