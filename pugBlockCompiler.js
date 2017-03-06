@@ -34,6 +34,10 @@ var updateFileInfo = function (filepath, oldData) {
         return undefined;
     }
 
+    if (undefined === oldData) {
+        oldData = {};
+    }
+
     var stats = fs.statSync(filepath);
     var blockData = {};
 
@@ -160,29 +164,33 @@ var compileFile = function (file, enc, cb) {
     var blockName = _.last(_.split(dirname, '/'));
 
     file.path = file.cwd + '/' + path.basename(file.path);
+    file.path = ext(file.path, '.html');
+    file.base = path.normalize(file.base + '/../');
 
     var template = (templateFilename == 'layout') ? getLayoutTemplate() : getBlockTemplate(blockName, templateFilename);
 
-    var html = pugCompile(template, {
-        layoutData: isExists(layoutDataFilepath) ? loadData(layoutDataFilepath) : {},
-        blockData: blockIndex.data ? loadData(blockIndex.data.filepath) : {}
-    }, dirname + '/../tmp.pug');
+    try {
+        var html = pugCompile(template, {
+            layoutData: isExists(layoutDataFilepath) ? loadData(layoutDataFilepath) : {},
+            blockData: blockIndex.data ? loadData(blockIndex.data.filepath) : {}
+        }, dirname + '/../tmp.pug');
 
-    file.path = ext(file.path, '.html');
+        if (file.isBuffer()) {
+            file.contents = new Buffer(html);
+        }
 
-    if (file.isBuffer()) {
-        file.contents = new Buffer(html);
+        cb(null, file);
+    } catch(e) {
+        cb(e);
     }
-
-    cb(null, file);
 };
 
 var indexFile = function (file, enc, callback) {
     var templateFilename = path.basename(file.relative, '.pug');
     var blockDataFilepath = file.dirname + '/' + templateFilename + '.data.js';
 
-    var blockIndex = getBlockIndex(file.relative);
 
+    var blockIndex = getBlockIndex(file.relative);
     blockIndex.template = updateFileInfo(file.path, blockIndex.template);
     blockIndex.data = updateFileInfo(blockDataFilepath, blockIndex.data);
     blockIndex.dependecies = getIncludesBlocks(file);

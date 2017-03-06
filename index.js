@@ -6,9 +6,12 @@ var
     argv = require('yargs').argv,
     gulpWebpackTask = require('gulp-webpack-task'),
     watch = require('gulp-watch'),
+    notify = require('gulp-notify'),
+    plumber = require('gulp-plumber'),
     del = require('del'),
     browserSync = require('browser-sync').create(),
     pugBlockCompiler = require('./pugBlockCompiler'),
+    createHtmlIndex = require('./createHtmlIndex'),
     applyManifest = require('./applyManifest');
 
 var defaultConfig = {
@@ -72,8 +75,17 @@ var getPugTask = function (gulp, config) {
 
     return function () {
         var gulpPipe = gulp.src(config.blockPath)
+            .pipe(plumber({
+                errorHandler: function(err) {
+                    notify.onError({
+                        title:    'Pug',
+                        message:  err.message
+                    })(err);
+                }
+            }))
             .pipe(pugBlockCompiler.index())
-            .pipe(pugBlockCompiler());
+            .pipe(pugBlockCompiler())
+            .pipe(createHtmlIndex());
 
         if ('stage' == config.env) {
             gulpPipe
@@ -82,8 +94,7 @@ var getPugTask = function (gulp, config) {
         }
 
         _.each(config.destination, function (path) {
-            // todo: mystic destination path
-            gulpPipe.pipe(gulp.dest(path + '/test/'));
+            gulpPipe.pipe(gulp.dest(path));
         });
 
         return gulpPipe;
@@ -91,8 +102,9 @@ var getPugTask = function (gulp, config) {
 };
 
 var getPugWatchTask = function (gulp, config) {
-    return function () {
+    return function (callback) {
         watch(config.pugWatchList, gulp.series('pug'));
+        callback();
     };
 };
 
@@ -102,7 +114,7 @@ var getDefaultTask = function (gulp, env) {
             return gulp.series('clean', 'assets');
             break;
         case 'development':
-            return gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch', 'serve'));
+            return gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch'), 'serve');
             break;
         case 'stage':
             return gulp.series('clean', 'assets', 'pug');
