@@ -163,9 +163,8 @@ var compileFile = function (file, enc, cb) {
     }
     var blockName = _.last(_.split(dirname, '/'));
 
-    file.path = file.cwd + '/' + path.basename(file.path);
+    file.path = file.base + '/' + path.basename(file.path);
     file.path = ext(file.path, '.html');
-    file.base = path.normalize(file.base + '/../');
 
     var template = (templateFilename == 'layout') ? getLayoutTemplate() : getBlockTemplate(blockName, templateFilename);
 
