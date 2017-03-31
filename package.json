@@ -1,6 +1,6 @@
 {
   "name": "gulp-html-tasks",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "gulp-livereload": "^3.8.1",
     "gulp-pug": "^3.0.4",
     "gulp-watch": "~4.3.0",
-    "gulp-webpack-task": "~0.6",
+    "gulp-webpack-task": "~0.7",
     "gulp-wait": "0.0.2",
     "nodejs-fixture-generator": "0.0.3",
     "lodash": "^4.13.1",
