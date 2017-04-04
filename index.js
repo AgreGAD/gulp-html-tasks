@@ -32,6 +32,7 @@ var getCleanTask = function (config) {
 var getAssetsTask = function (gulp, config, aliases, provides, env) {
     return gulpWebpackTask(gulp, {
         entry: config.entry,
+        publicPath: config.publicPath,
         destination: _.map(config.destination, function (path) { return path + '/'; }),
         aliases: aliases,
         provides: provides,
