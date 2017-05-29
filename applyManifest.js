@@ -15,10 +15,10 @@ var getReplaces = function (manifestFilePath) {
     return replaces;
 };
 
-var createApplyManifest = function (destination) {
+var createApplyManifest = function () {
     return function (file, enc, cb) {
         var content = file.contents.toString();
-        var manifestFilePath = file.cwd + '/' + destination + '/manifest.json';
+        var manifestFilePath = file.base + '/manifest.json';
         var replaces = getReplaces(manifestFilePath);
 
         _.forIn(replaces, function (replace, search) {

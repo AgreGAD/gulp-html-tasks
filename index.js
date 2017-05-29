@@ -47,7 +47,8 @@ var getAssetsTask = function (gulp, config, aliases, provides, env) {
 
 var getApplyManifestFile = function (gulp, destinations) {
     return function () {
-        var gulpPipe = gulp.src(destinations + '/*.html')
+        var lastDestination = _.head(destinations)
+        var gulpPipe = gulp.src(lastDestination + '/*.html')
             .pipe(wait(1000))
             .pipe(applyManifest());
 
@@ -71,9 +72,6 @@ var getServeTask = function (config) {
 };
 
 var getPugTask = function (gulp, config) {
-
-    var firstDestination = _.head(config.destination);
-
     return function () {
         var gulpPipe = gulp.src(config.blockPath)
             .pipe(plumber({
@@ -87,12 +85,6 @@ var getPugTask = function (gulp, config) {
             .pipe(pugBlockCompiler.index())
             .pipe(pugBlockCompiler())
             .pipe(createHtmlIndex());
-
-        if ('stage' == config.env) {
-            gulpPipe
-                .pipe(wait(1000))
-                .pipe(applyManifest(firstDestination));
-        }
 
         _.each(config.destination, function (path) {
             gulpPipe.pipe(gulp.dest(path));
@@ -118,7 +110,7 @@ var getDefaultTask = function (gulp, env) {
             return gulp.series('clean', 'pug', gulp.parallel('assets', 'pug_watch'), 'serve');
             break;
         case 'stage':
-            return gulp.series('clean', 'assets', 'pug');
+            return gulp.series('clean', 'assets', 'pug', 'apply_manifest');
             break;
     }
 };
