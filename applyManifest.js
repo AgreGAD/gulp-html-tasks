@@ -15,11 +15,24 @@ var getReplaces = function (manifestFilePath) {
     return replaces;
 };
 
-var createApplyManifest = function () {
+var remotePublicPath = function (replaces, publicPath) {
+    if (!publicPath) {
+        return replaces;
+    }
+
+    var newReplaces = {};
+    _.forIn(replaces, function (value, key) {
+        newReplaces[_.replace(key, publicPath, '')] = _.replace(value, publicPath, '');
+    });
+
+    return newReplaces;
+};
+
+var createApplyManifest = function (publicPath) {
     return function (file, enc, cb) {
         var content = file.contents.toString();
         var manifestFilePath = file.base + '/manifest.json';
-        var replaces = getReplaces(manifestFilePath);
+        var replaces = remotePublicPath(getReplaces(manifestFilePath), publicPath);
 
         _.forIn(replaces, function (replace, search) {
             content = _.replace(content, search, replace);
@@ -33,6 +46,6 @@ var createApplyManifest = function () {
     };
 };
 
-module.exports = function (manifestFilePath) {
-    return through2(createApplyManifest(manifestFilePath));
+module.exports = function (publicPath) {
+    return through2(createApplyManifest(publicPath));
 };
