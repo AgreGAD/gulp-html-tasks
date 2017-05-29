@@ -45,12 +45,12 @@ var getAssetsTask = function (gulp, config, aliases, provides, env) {
     });
 };
 
-var getApplyManifestFile = function (gulp, destinations) {
+var getApplyManifestFile = function (gulp, destinations, publicPath) {
     return function () {
         var lastDestination = _.head(destinations)
         var gulpPipe = gulp.src(lastDestination + '/*.html')
             .pipe(wait(1000))
-            .pipe(applyManifest());
+            .pipe(applyManifest(publicPath));
 
         _.each(destinations, function (path) {
             gulpPipe.pipe(gulp.dest(path));
@@ -124,7 +124,7 @@ module.exports = function (gulp, config) {
 
     gulp.task('clean', getCleanTask(webpackConfig));
     gulp.task('assets', getAssetsTask(gulp, webpackConfig, config.aliases, config.provides, config.env));
-    gulp.task('apply_manifest', getApplyManifestFile(gulp, webpackConfig.destination));
+    gulp.task('apply_manifest', getApplyManifestFile(gulp, webpackConfig.destination, config.publicPath));
     gulp.task('serve', getServeTask(webpackConfig));
     gulp.task('pug', getPugTask(gulp, webpackConfig));
     gulp.task('pug_watch', getPugWatchTask(gulp, webpackConfig));
