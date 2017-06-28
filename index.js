@@ -49,7 +49,6 @@ var getApplyManifestFile = function (gulp, destinations, publicPath) {
     return function () {
         var lastDestination = _.head(destinations)
         var gulpPipe = gulp.src(lastDestination + '/*.html')
-            .pipe(wait(2000))
             .pipe(applyManifest(publicPath));
 
         _.each(destinations, function (path) {
@@ -72,7 +71,7 @@ var getServeTask = function (config) {
 };
 
 var getPugTask = function (gulp, config) {
-    return function () {
+    return function (cb) {
         var gulpPipe = gulp.src(config.blockPath)
             .pipe(plumber({
                 errorHandler: function(err) {
@@ -90,7 +89,11 @@ var getPugTask = function (gulp, config) {
             gulpPipe.pipe(gulp.dest(path));
         });
 
-        return gulpPipe;
+        gulpPipe.on('end', function () {
+            setTimeout(function () {
+                cb();
+            }, 2000);
+        });
     };
 };
 
