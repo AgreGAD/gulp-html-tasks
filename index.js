@@ -49,7 +49,7 @@ var getApplyManifestFile = function (gulp, destinations, publicPath) {
     return function () {
         var lastDestination = _.head(destinations)
         var gulpPipe = gulp.src(lastDestination + '/*.html')
-            .pipe(wait(1000))
+            .pipe(wait(2000))
             .pipe(applyManifest(publicPath));
 
         _.each(destinations, function (path) {
