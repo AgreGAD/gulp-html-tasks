@@ -25,7 +25,7 @@ var defaultConfig = {
 
 var getCleanTask = function (config) {
     return function () {
-        return del(config.destination, {force: true});
+        return del(config.destination + '/*', {force: true});
     };
 };
 
